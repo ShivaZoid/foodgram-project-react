@@ -108,7 +108,7 @@ class Recipe(models.Model):
     )
     ingredients = models.ManyToManyField(
         Ingredient,
-        through='RecipeIngredient'
+        through='IngredientInRecipe'
     )
     tags = models.ManyToManyField(
         Tag,
@@ -117,9 +117,15 @@ class Recipe(models.Model):
     )
     cooking_time = models.PositiveSmallIntegerField(
         verbose_name='Время приготовления в минутах',
-        validators=validators.MinValueValidator(
-            1, message='Мин. время приготовления 1 минута'
-        ),
+        validators=[
+            validators.MinValueValidator(
+                1, message='Мин. время приготовления 1 минута'
+            ),
+        ]
+    )
+    pub_date = models.DateTimeField(
+        'Дата публикации',
+        auto_now_add=True
     )
 
     class Meta:
