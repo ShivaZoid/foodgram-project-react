@@ -26,7 +26,7 @@ from .filters import IngredientFilter, RecipeFilter
 from .mixins import PermissionAndPaginationMixin, GetObjectMixin
 from .serializers import (
     IngredientSerializer, RecipeReadSerializer, RecipeWriteSerializer,
-    SubscribeSerializer, TagSerializer,TokenSerializer,
+    SubscribeSerializer, TagSerializer, TokenSerializer,
     UserCreateSerializer, UserListSerializer, UserPasswordSerializer
 )
 
