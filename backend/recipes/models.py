@@ -199,7 +199,7 @@ class IngredientInRecipe(models.Model):
         ordering = ('recipe', )
         constraints = [
             models.UniqueConstraint(
-                fields=['recipe', 'ingredient'],
+                fields=['recipe', 'ingredients'],
                 name='\n%(app_label)s_%(class)s ingredient alredy added\n'
             )
         ]
