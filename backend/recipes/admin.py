@@ -49,9 +49,14 @@ class IngredientAdmin(admin.ModelAdmin):
     empty_value_display = '-пусто-'
 
 
-class IngredientInRecipeAdmin(admin.StackedInline):
+class IngredientInline(admin.TabularInline):
     model = IngredientInRecipe
-    autocomplete_fields = ('ingredient',)
+    extra = 2
+
+
+@admin.register(IngredientInRecipe)
+class LinksAdmin(admin.ModelAdmin):
+    pass
 
 
 @admin.register(Recipe)
@@ -67,16 +72,17 @@ class RecipeAdmin(admin.ModelAdmin):
     """
 
     list_display = (
-        'id', 'author', 'name',
-        'text', 'get_ingredients', 'get_tags',
-        'cooking_time', 'get_favorite_count'
+        'name',
+        'author',
+        'get_image',
+        'count_favorites',
     )
     search_fields = (
         'name', 'cooking_time',
         'author__email', 'ingredients__name'
     )
     list_filter = ('author', 'name', 'tags',)
-    inlines = (IngredientInRecipeAdmin,)
+    inlines = (IngredientInline,)
     empty_value_display = '-пусто-'
 
     def get_image(self, obj: Recipe) -> SafeString:

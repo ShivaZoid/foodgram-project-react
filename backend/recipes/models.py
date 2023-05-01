@@ -217,15 +217,16 @@ class FavoriteRecipe(models.Model):
         recipe: избранный рецепт.
     """
 
-    user = models.OneToOneField(
+    user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
         null=True,
         related_name='favorites',
         verbose_name='Пользователь'
     )
-    recipe = models.ManyToManyField(
+    recipe = models.ForeignKey(
         Recipe,
+        on_delete=models.CASCADE,
         related_name='in_favorites',
         verbose_name='Избранный рецепт'
     )
