@@ -22,8 +22,8 @@ ALLOWED_HOSTS = os.environ.get(
 
 CSRF_TRUSTED_ORIGINS = os.getenv(
     'CSRF_TRUSTED_ORIGINS',
-    default='http://localhost, http://127.0.0.1'
-)
+    default='http://127.0.0.1'
+).split(',')
 
 INSTALLED_APPS = [
     'api.apps.ApiConfig',
