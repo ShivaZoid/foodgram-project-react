@@ -1,7 +1,12 @@
+from typing import Optional
+
 from django.contrib import admin
+from django.core.handlers.wsgi import WSGIRequest
+from django.utils.html import format_html
+from django.utils.safestring import SafeString, mark_safe
 
 from .models import (FavoriteRecipe, Ingredient, Recipe,
-                     IngredientInRecipe, ShoppingCart, Subscribe, Tag)
+                     IngredientInRecipe, ShoppingCart, Tag)
 
 
 @admin.register(Tag)
@@ -14,9 +19,18 @@ class TagAdmin(admin.ModelAdmin):
         list_filter: возможность фильтрации.
     """
 
-    list_display = ('id', 'name', 'color', 'slug',)
-    search_fields = ('name', 'slug',)
+    list_display = ('name', 'slug', 'color_code')
+    search_fields = ('name', 'color',)
     empty_value_display = '-пусто-'
+
+    @admin.display(description='Colored')
+    def color_code(self, obj: Tag):
+        return format_html(
+            '<span style="color: #{};">{}</span>',
+            obj.color[1:], obj.color
+        )
+
+    color_code.short_description = 'Цветовой код тега'
 
 
 @admin.register(Ingredient)
@@ -29,15 +43,20 @@ class IngredientAdmin(admin.ModelAdmin):
         list_filter: возможность фильтрации.
     """
 
-    list_display = ('id', 'name', 'measurement_unit',)
-    search_fields = ('name', 'measurement_unit',)
+    list_display = ('name', 'measurement_unit',)
+    search_fields = ('name',)
     list_filter = ('name',)
     empty_value_display = '-пусто-'
 
 
-class RecipeIngredientAdmin(admin.StackedInline):
+class IngredientInline(admin.TabularInline):
     model = IngredientInRecipe
-    autocomplete_fields = ('ingredient',)
+    extra = 2
+
+
+@admin.register(IngredientInRecipe)
+class LinksAdmin(admin.ModelAdmin):
+    pass
 
 
 @admin.register(Recipe)
@@ -50,60 +69,31 @@ class RecipeAdmin(admin.ModelAdmin):
         list_filter: возможность фильтрации.
         inlines: список моделей, связанных с моделью Recipe
         и редактируемых вместе с ней.
-
-    Methods:
-        get_tags: возвращает строку со списком тегов, связанных с рецептом.
-        get_ingredients: возвращает строку со списком ингредиентов,
-        связанных с рецептом и их количеством.
-        get_favorite_count: возвращает количество пользователей,
-        добавивших рецепт в избранное.
     """
 
     list_display = (
-        'id', 'author', 'name',
-        'text', 'get_ingredients', 'get_tags',
-        'cooking_time', 'get_favorite_count'
+        'name',
+        'author',
+        'get_image',
+        'count_favorites',
     )
     search_fields = (
         'name', 'cooking_time',
         'author__email', 'ingredients__name'
     )
     list_filter = ('author', 'name', 'tags',)
-    inlines = (RecipeIngredientAdmin,)
+    inlines = (IngredientInline,)
     empty_value_display = '-пусто-'
 
-    @admin.display(description='Тэги')
-    def get_tags(self, obj):
-        list_ = [_.name for _ in obj.tags.all()]
-        return ', '.join(list_)
+    def get_image(self, obj: Recipe) -> SafeString:
+        return mark_safe(f'<img src={obj.image.url} width="80" hieght="30"')
 
-    @admin.display(description=' Ингредиенты ')
-    def get_ingredients(self, obj):
-        return '\n '.join([
-            f'{item["ingredient__name"]} - {item["amount"]}'
-            f' {item["ingredient__measurement_unit"]}.'
-            for item in obj.recipe.values(
-                'ingredient__name',
-                'amount', 'ingredient__measurement_unit')])
+    get_image.short_description = 'Изображение'
 
-    @admin.display(description='В избранном')
-    def get_favorite_count(self, obj):
-        return obj.favorite_recipe.count()
+    def count_favorites(self, obj: Recipe) -> int:
+        return obj.in_favorites.count()
 
-
-@admin.register(Subscribe)
-class SubscribeAdmin(admin.ModelAdmin):
-    """Конфигурация отображения данных.
-
-    Attributes:
-        list_display: отображаемые поля.
-        search_fields: интерфейс для поиска.
-        list_filter: возможность фильтрации.
-    """
-
-    list_display = ('id', 'user', 'author',)
-    search_fields = ('user__email', 'author__email',)
-    empty_value_display = '-пусто-'
+    count_favorites.short_description = 'В избранном'
 
 
 @admin.register(FavoriteRecipe)
@@ -112,23 +102,12 @@ class FavoriteRecipeAdmin(admin.ModelAdmin):
 
     Attributes:
         list_display: отображаемые поля.
-
-    Methods:
-        get_recipe: получение списка названий первых пяти рецептов в избранном.
-        get_count: получение количества рецептов в избранном.
+        search_fields: интерфейс для поиска.
     """
 
-    list_display = ('id', 'user', 'get_recipe', 'get_count')
+    list_display = ('user', 'recipe',)
+    search_fields = ('user__username', 'recipe__name')
     empty_value_display = '-пусто-'
-
-    @admin.display(description='Рецепты')
-    def get_recipe(self, obj):
-        return [
-            f'{item["name"]} ' for item in obj.recipe.values('name')[:5]]
-
-    @admin.display(description='В избранных')
-    def get_count(self, obj):
-        return obj.recipe.count()
 
 
 @admin.register(ShoppingCart)
@@ -137,21 +116,9 @@ class ShoppingCartAdmin(admin.ModelAdmin):
 
     Attributes:
         list_display: отображаемые поля.
-
-    Methods:
-        get_recipe: получение списка названий первых пяти рецептов
-        в корзине покупок.
-        get_count: получение количества рецептов в корзине покупок.
+        search_fields: интерфейс для поиска..
     """
 
-    list_display = ('id', 'user', 'get_recipe', 'get_count')
+    list_display = ('user', 'recipe',)
+    search_fields = ('user__username', 'recipe__name')
     empty_value_display = '-пусто-'
-
-    @admin.display(description='Рецепты')
-    def get_recipe(self, obj):
-        return [
-            f'{item["name"]} ' for item in obj.recipe.values('name')[:5]]
-
-    @admin.display(description='В избранных')
-    def get_count(self, obj):
-        return obj.recipe.count()
