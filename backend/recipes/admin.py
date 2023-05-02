@@ -5,6 +5,7 @@ from django.core.handlers.wsgi import WSGIRequest
 from django.utils.html import format_html
 from django.utils.safestring import SafeString, mark_safe
 
+from .forms import TagForm
 from .models import (FavoriteRecipe, Ingredient, Recipe,
                      IngredientInRecipe, ShoppingCart, Tag)
 
@@ -19,6 +20,7 @@ class TagAdmin(admin.ModelAdmin):
         list_filter: возможность фильтрации.
     """
 
+    form = TagForm
     list_display = ('name', 'slug', 'color_code')
     search_fields = ('name', 'color',)
     empty_value_display = '-пусто-'
