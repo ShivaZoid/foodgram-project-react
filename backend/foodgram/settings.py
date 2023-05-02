@@ -26,9 +26,9 @@ CSRF_TRUSTED_ORIGINS = os.getenv(
 ).split(',')
 
 INSTALLED_APPS = [
-    'api',
-    'recipes',
-    'users',
+    'users.apps.UsersConfig',
+    'recipes.apps.RecipesConfig',
+    'api.apps.ApiConfig',
     'djoser',
     'rest_framework',
     'rest_framework.authtoken',

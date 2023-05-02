@@ -19,23 +19,130 @@ from rest_framework.permissions import (SAFE_METHODS, AllowAny,
                                         IsAuthenticatedOrReadOnly)
 from rest_framework.response import Response
 
-from recipes.models import (
-    FavoriteRecipe, Ingredient, Recipe, ShoppingCart, Subscribe, Tag
-)
-from .filters import IngredientFilter, RecipeFilter
-from .mixins import PermissionAndPaginationMixin, GetObjectMixin
-from .serializers import (
-    IngredientSerializer, RecipeReadSerializer, RecipeWriteSerializer,
-    SubscribeSerializer, TagSerializer, TokenSerializer,
-    UserCreateSerializer, UserListSerializer, UserPasswordSerializer
-)
-
+from api.filters import IngredientFilter, RecipeFilter
+from api.permissions import IsAdminOrReadOnly
+from recipes.models import (FavoriteRecipe, Ingredient, Recipe, ShoppingCart,
+                            Subscribe, Tag)
+from .serializers import (IngredientSerializer, RecipeReadSerializer,
+                          RecipeWriteSerializer, SubscribeRecipeSerializer,
+                          SubscribeSerializer, TagSerializer, TokenSerializer,
+                          UserCreateSerializer, UserListSerializer,
+                          UserPasswordSerializer)
 
 User = get_user_model()
+FILENAME = 'shoppingcart.pdf'
+
+
+class GetObjectMixin:
+    """Миксина для удаления/добавления рецептов избранных/корзины."""
+
+    serializer_class = SubscribeRecipeSerializer
+    permission_classes = (AllowAny,)
+
+    def get_object(self):
+        recipe_id = self.kwargs['recipe_id']
+        recipe = get_object_or_404(Recipe, id=recipe_id)
+        self.check_object_permissions(self.request, recipe)
+        return recipe
+
+
+class PermissionAndPaginationMixin:
+    """Миксина для списка тегов и ингридиентов."""
+
+    permission_classes = (IsAdminOrReadOnly,)
+    pagination_class = None
+
+
+class AddAndDeleteSubscribe(
+        generics.RetrieveDestroyAPIView,
+        generics.ListCreateAPIView):
+    """Подписка и отписка от пользователя."""
+
+    serializer_class = SubscribeSerializer
+
+    def get_queryset(self):
+        return self.request.user.follower.select_related(
+            'following'
+        ).prefetch_related(
+            'following__recipe'
+        ).annotate(
+            recipes_count=Count('following__recipe'),
+            is_subscribed=Value(True), )
+
+    def get_object(self):
+        user_id = self.kwargs['user_id']
+        user = get_object_or_404(User, id=user_id)
+        self.check_object_permissions(self.request, user)
+        return user
+
+    def create(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if request.user.id == instance.id:
+            return Response(
+                {'errors': 'На самого себя не подписаться!'},
+                status=status.HTTP_400_BAD_REQUEST)
+        if request.user.follower.filter(author=instance).exists():
+            return Response(
+                {'errors': 'Уже подписан!'},
+                status=status.HTTP_400_BAD_REQUEST)
+        subs = request.user.follower.create(author=instance)
+        serializer = self.get_serializer(subs)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def perform_destroy(self, instance):
+        self.request.user.follower.filter(author=instance).delete()
+
+
+class AddDeleteFavoriteRecipe(
+        GetObjectMixin,
+        generics.RetrieveDestroyAPIView,
+        generics.ListCreateAPIView):
+    """Добавление и удаление рецепта в/из избранных."""
+
+    def create(self, request, *args, **kwargs):
+        instance = self.get_object()
+        request.user.favorite_recipe.recipe.add(instance)
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def perform_destroy(self, instance):
+        self.request.user.favorite_recipe.recipe.remove(instance)
+
+
+class AddDeleteShoppingCart(
+        GetObjectMixin,
+        generics.RetrieveDestroyAPIView,
+        generics.ListCreateAPIView):
+    """Добавление и удаление рецепта в/из корзины."""
+
+    def create(self, request, *args, **kwargs):
+        instance = self.get_object()
+        request.user.shopping_cart.recipe.add(instance)
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def perform_destroy(self, instance):
+        self.request.user.shopping_cart.recipe.remove(instance)
+
+
+class AuthToken(ObtainAuthToken):
+    """Авторизация пользователя."""
+
+    serializer_class = TokenSerializer
+    permission_classes = (AllowAny,)
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.validated_data['user']
+        token, created = Token.objects.get_or_create(user=user)
+        return Response(
+            {'auth_token': token.key},
+            status=status.HTTP_201_CREATED)
 
 
 class UsersViewSet(UserViewSet):
-    """Управление пользователями."""
+    """Пользователи."""
 
     serializer_class = UserListSerializer
     permission_classes = (IsAuthenticated,)
@@ -51,19 +158,20 @@ class UsersViewSet(UserViewSet):
             is_subscribed=Value(False))
 
     def get_serializer_class(self):
-        """Выбор сериализатора в зависимости от типа запроса."""
         if self.request.method.lower() == 'post':
             return UserCreateSerializer
         return UserListSerializer
 
     def perform_create(self, serializer):
-        """Создание нового пользователя с хэшированным паролем."""
         password = make_password(self.request.data['password'])
         serializer.save(password=password)
 
-    @action(detail=False, permission_classes=(IsAuthenticated,))
+    @action(
+        detail=False,
+        permission_classes=(IsAuthenticated,))
     def subscriptions(self, request):
-        """Получение списка подписок текущего пользователя."""
+        """Получить на кого пользователь подписан."""
+
         user = request.user
         queryset = Subscribe.objects.filter(user=user)
         pages = self.paginate_queryset(queryset)
@@ -73,43 +181,19 @@ class UsersViewSet(UserViewSet):
         return self.get_paginated_response(serializer.data)
 
 
-class TagsViewSet(viewsets.ModelViewSet,
-                  PermissionAndPaginationMixin):
-    """Просмотр и редактирование списка тегов."""
-
-    queryset = Tag.objects.all()
-    serializer_class = TagSerializer
-
-
-class IngredientsViewSet(viewsets.ModelViewSet,
-                         PermissionAndPaginationMixin):
-    """Просмотр и редактирование списка ингредиентов."""
-
-    queryset = Ingredient.objects.all()
-    serializer_class = IngredientSerializer
-    filterset_class = IngredientFilter
-
-
 class RecipesViewSet(viewsets.ModelViewSet):
-    """API-интерфейс для работы с рецептами."""
+    """Рецепты."""
 
     queryset = Recipe.objects.all()
     filterset_class = RecipeFilter
     permission_classes = (IsAuthenticatedOrReadOnly,)
 
     def get_serializer_class(self):
-        """Выбор сериализатора в зависимости от типа запроса."""
-
         if self.request.method in SAFE_METHODS:
             return RecipeReadSerializer
         return RecipeWriteSerializer
 
     def get_queryset(self):
-        """
-        Получение QuerySet с аннотациями и
-        предварительно загруженными объектами.
-        """
-
         return Recipe.objects.annotate(
             is_favorited=Exists(
                 FavoriteRecipe.objects.filter(
@@ -129,17 +213,14 @@ class RecipesViewSet(viewsets.ModelViewSet):
             'shopping_cart', 'favorite_recipe')
 
     def perform_create(self, serializer):
-        """Сохранение объекта в БД."""
-
         serializer.save(author=self.request.user)
 
-    @action(detail=False,
-            methods=['get'],
-            permission_classes=(IsAuthenticated,))
+    @action(
+        detail=False,
+        methods=['get'],
+        permission_classes=(IsAuthenticated,))
     def download_shopping_cart(self, request):
-        """
-        Создает PDF-файл со списком покупок для авторизованного пользователя.
-        """
+        """Качаем список с ингредиентами."""
 
         buffer = io.BytesIO()
         page = canvas.Canvas(buffer)
@@ -179,121 +260,28 @@ class RecipesViewSet(viewsets.ModelViewSet):
         return FileResponse(buffer, as_attachment=True, filename=FILENAME)
 
 
-class AddDeleteSubscribe(generics.RetrieveDestroyAPIView,
-                         generics.ListCreateAPIView):
-    """Подписка и отписка от пользователя."""
+class TagsViewSet(
+        PermissionAndPaginationMixin,
+        viewsets.ModelViewSet):
+    """Список тэгов."""
 
-    serializer_class = SubscribeSerializer
-
-    def get_queryset(self):
-        """
-        Возвращает информацию о всех подписках пользователя.
-        """
-        return self.request.user.follower.select_related(
-            'following'
-        ).prefetch_related(
-            'following__recipe'
-        ).annotate(
-            recipes_count=Count('following__recipe'),
-            is_subscribed=Value(True), )
-
-    def get_object(self):
-        """
-        Возвращает пользователя, на которого осуществляется подписка/отписка.
-        """
-        user_id = self.kwargs['user_id']
-        user = get_object_or_404(User, id=user_id)
-        self.check_object_permissions(self.request, user)
-        return user
-
-    def create(self, request, *args, **kwargs):
-        """
-        Создает новую подписку на указанного пользователя
-        и возвращает сериализованные данные созданной подписки.
-        """
-        instance = self.get_object()
-        if request.user.id == instance.id:
-            return Response(
-                {'errors': 'На самого себя не подписаться!'},
-                status=status.HTTP_400_BAD_REQUEST)
-        if request.user.follower.filter(author=instance).exists():
-            return Response(
-                {'errors': 'Уже подписан!'},
-                status=status.HTTP_400_BAD_REQUEST)
-        subs = request.user.follower.create(author=instance)
-        serializer = self.get_serializer(subs)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-    def perform_destroy(self, instance):
-        """
-        Удаляет существующую подписку на пользователя.
-        """
-        self.request.user.follower.filter(author=instance).delete()
+    queryset = Tag.objects.all()
+    serializer_class = TagSerializer
 
 
-class AddDeleteFavoriteRecipe(generics.RetrieveDestroyAPIView,
-                              generics.ListCreateAPIView,
-                              GetObjectMixin):
-    """
-    Позволяет добавить или удалить рецепты в избранном у пользователя.
-    """
+class IngredientsViewSet(
+        PermissionAndPaginationMixin,
+        viewsets.ModelViewSet):
+    """Список ингредиентов."""
 
-    def create(self, request, *args, **kwargs):
-        instance = self.get_object()
-        request.user.favorite_recipe.recipe.add(instance)
-        serializer = self.get_serializer(instance)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-    def perform_destroy(self, instance):
-        self.request.user.favorite_recipe.recipe.remove(instance)
-
-
-class AddDeleteShoppingCart(generics.RetrieveDestroyAPIView,
-                            generics.ListCreateAPIView,
-                            GetObjectMixin):
-    """
-    Позволяет добавить или удалить рецепт в списоке покупок пользователя.
-    """
-
-    def create(self, request, *args, **kwargs):
-        instance = self.get_object()
-        request.user.shopping_cart.recipe.add(instance)
-        serializer = self.get_serializer(instance)
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
-
-    def perform_destroy(self, instance):
-        self.request.user.shopping_cart.recipe.remove(instance)
-
-
-class AuthToken(ObtainAuthToken):
-    """Авторизация пользователя."""
-
-    serializer_class = TokenSerializer
-    permission_classes = (AllowAny,)
-
-    def post(self, request, *args, **kwargs):
-        """
-        Проверка данных пользователя помощью сериализатора,
-        создание токена, при отсутствии, и его возвращении.
-        """
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        user = serializer.validated_data['user']
-        token, created = Token.objects.get_or_create(user=user)
-        return Response(
-            {'auth_token': token.key},
-            status=status.HTTP_201_CREATED
-        )
+    queryset = Ingredient.objects.all()
+    serializer_class = IngredientSerializer
+    filterset_class = IngredientFilter
 
 
 @api_view(['post'])
 def set_password(request):
-    """
-    Позволяет изменить пароль текущего пользователя.
-
-    Требуется передать в запросе текущий и новый пароль.
-    Возвращает сообщение об успешном изменении или ошибку валидации.
-    """
+    """Изменить пароль."""
 
     serializer = UserPasswordSerializer(
         data=request.data,
@@ -301,10 +289,8 @@ def set_password(request):
     if serializer.is_valid():
         serializer.save()
         return Response(
-            {'message': 'Пароль изменен'},
-            status=status.HTTP_201_CREATED
-        )
+            {'message': 'Пароль изменен!'},
+            status=status.HTTP_201_CREATED)
     return Response(
-        {'error': 'Неверно указаны данные'},
-        status=status.HTTP_400_BAD_REQUEST
-    )
+        {'error': 'Введите верные данные!'},
+        status=status.HTTP_400_BAD_REQUEST)

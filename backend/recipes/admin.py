@@ -1,7 +1,7 @@
 from django.contrib import admin
 
 from .models import (FavoriteRecipe, Ingredient, Recipe,
-                     IngredientInRecipe, ShoppingCart, Subscribe, Tag)
+                     RecipeIngredient, ShoppingCart, Subscribe, Tag)
 
 
 @admin.register(Tag)
@@ -36,7 +36,7 @@ class IngredientAdmin(admin.ModelAdmin):
 
 
 class RecipeIngredientAdmin(admin.StackedInline):
-    model = IngredientInRecipe
+    model = RecipeIngredient
     autocomplete_fields = ('ingredient',)
 
 
@@ -60,7 +60,7 @@ class RecipeAdmin(admin.ModelAdmin):
     """
 
     list_display = (
-        'id', 'author', 'name',
+        'id', 'get_author', 'author', 'name',
         'text', 'get_ingredients', 'get_tags',
         'cooking_time', 'get_favorite_count'
     )
@@ -71,6 +71,10 @@ class RecipeAdmin(admin.ModelAdmin):
     list_filter = ('author', 'name', 'tags',)
     inlines = (RecipeIngredientAdmin,)
     empty_value_display = '-пусто-'
+
+    @admin.display(description='Электронная почта автора')
+    def get_author(self, obj):
+        return obj.author.email
 
     @admin.display(description='Тэги')
     def get_tags(self, obj):

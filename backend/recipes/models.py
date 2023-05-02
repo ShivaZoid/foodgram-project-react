@@ -106,9 +106,12 @@ class Recipe(models.Model):
     text = models.TextField(
         'Описание рецепта'
     )
+    cooking_time = models.BigIntegerField(
+        'Время приготовления рецепта'
+    )
     ingredients = models.ManyToManyField(
         Ingredient,
-        through='IngredientInRecipe'
+        through='RecipeIngredient'
     )
     tags = models.ManyToManyField(
         Tag,
@@ -137,7 +140,7 @@ class Recipe(models.Model):
         return f'{self.author}, {self.name}'
 
 
-class IngredientInRecipe(models.Model):
+class RecipeIngredient(models.Model):
     """
     Модель, представляющая количество ингредиента, используемого в рецепте.
 
