@@ -3,6 +3,14 @@ from django.db import models
 
 
 class User(AbstractUser):
+    """Модель для пользователей.
+
+    Attributes:
+        email: почта пользователя.
+        first_name: имя.
+        last_name: фамилия.
+    """
+
     email = models.EmailField(
         'Email',
         max_length=200,
