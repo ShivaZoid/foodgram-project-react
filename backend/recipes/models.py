@@ -2,8 +2,9 @@ from django.contrib.auth import get_user_model
 from django.core import validators
 from django.db import models
 
+from api.enums import Tuples
+from PIL import Image
 from .validators import tag_slug_validator, hex_color_validator
-
 
 User = get_user_model()
 
@@ -16,6 +17,9 @@ class Tag(models.Model):
         name: название
         color: цвет в HEX.
         slug: уникальный слаг.
+
+    Example:
+        Tag('Завтрак', '01AB89', 'breakfirst')
     """
 
     name = models.CharField(
@@ -100,7 +104,7 @@ class Recipe(models.Model):
 
     author = models.ForeignKey(
         User,
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
         related_name='recipes',
         verbose_name='Автор',
         null=True
@@ -111,7 +115,7 @@ class Recipe(models.Model):
     )
     image = models.ImageField(
         'Изображение рецепта',
-        upload_to='static/recipe/',
+        upload_to='recipe_images/',
         blank=True,
         null=True
     )
@@ -122,7 +126,7 @@ class Recipe(models.Model):
         Ingredient,
         verbose_name='Ингредиенты блюда',
         related_name='recipes',
-        through='IngredientInRecipe'
+        through='recipes.IngredientInRecipe'
     )
     tags = models.ManyToManyField(
         Tag,
@@ -140,6 +144,7 @@ class Recipe(models.Model):
     pub_date = models.DateTimeField(
         'Дата публикации',
         auto_now_add=True,
+        editable=False,
     )
 
     class Meta:
@@ -155,6 +160,12 @@ class Recipe(models.Model):
 
     def __str__(self):
         return f'{self.name}. Автор: {self.author}'
+
+    def save(self, *args, **kwargs) -> None:
+        super().save(*args, **kwargs)
+        image = Image.open(self.image.path)
+        image = image.resize(Tuples.RECIPE_IMAGE_SIZE)
+        image.save(self.image.path)
 
 
 class IngredientInRecipe(models.Model):
