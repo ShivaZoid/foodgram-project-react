@@ -48,15 +48,6 @@ class GetObjectMixin:
         return recipe
 
 
-class PermissionAndPaginationMixin:
-    """
-    Миксин, содержащий свойства, связанные с правами доступа и пагинацией.
-    """
-
-    permission_classes = (IsAdminOrReadOnly,)
-    pagination_class = None
-
-
 class UsersViewSet(UserViewSet):
     """Управление пользователями."""
 
@@ -98,21 +89,21 @@ class UsersViewSet(UserViewSet):
         return self.get_paginated_response(serializer.data)
 
 
-class TagsViewSet(PermissionAndPaginationMixin,
-                  viewsets.ModelViewSet):
+class TagsViewSet(viewsets.ModelViewSet):
     """Просмотр и редактирование списка тегов."""
 
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
+    permission_classes = (IsAdminOrReadOnly,)
 
 
-class IngredientsViewSet(PermissionAndPaginationMixin,
-                         viewsets.ModelViewSet):
+class IngredientsViewSet(viewsets.ModelViewSet):
     """Просмотр и редактирование списка ингредиентов."""
 
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
     filterset_class = IngredientFilter
+    permission_classes = (IsAdminOrReadOnly,)
 
 
 class RecipesViewSet(viewsets.ModelViewSet):
