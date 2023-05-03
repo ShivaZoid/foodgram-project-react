@@ -21,6 +21,7 @@ from rest_framework.response import Response
 
 from api.filters import IngredientFilter, RecipeFilter
 from api.permissions import IsAdminOrReadOnly
+from api.pagination import LimitPageNumberPagination
 from recipes.models import (FavoriteRecipe, Ingredient, Recipe, ShoppingCart,
                             Subscribe, Tag)
 from .serializers import (IngredientSerializer, RecipeReadSerializer,
@@ -51,6 +52,7 @@ class GetObjectMixin:
 class UsersViewSet(UserViewSet):
     """Управление пользователями."""
 
+    pagination_class = LimitPageNumberPagination
     serializer_class = UserListSerializer
     permission_classes = (IsAuthenticated,)
 
@@ -110,6 +112,7 @@ class RecipesViewSet(viewsets.ModelViewSet):
     """Работа с рецептами."""
 
     queryset = Recipe.objects.all()
+    pagination_class = LimitPageNumberPagination
     filterset_class = RecipeFilter
     permission_classes = (IsAuthenticatedOrReadOnly,)
 
