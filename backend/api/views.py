@@ -106,8 +106,7 @@ class TagsViewSet(PermissionAndPaginationMixin,
     serializer_class = TagSerializer
 
 
-class IngredientsViewSet(PermissionAndPaginationMixin,
-                         viewsets.ModelViewSet):
+class IngredientsViewSet(viewsets.ModelViewSet):
     """Просмотр и редактирование списка ингредиентов."""
 
     queryset = Ingredient.objects.all()
