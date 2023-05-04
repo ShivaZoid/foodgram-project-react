@@ -18,7 +18,7 @@ DEBUG = False
 ALLOWED_HOSTS = os.environ.get(
     'ALLOWED_HOSTS',
     default='localhost'
-    ).split(', ')
+).split(', ')
 
 CSRF_TRUSTED_ORIGINS = os.getenv(
     'CSRF_TRUSTED_ORIGINS',
