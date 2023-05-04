@@ -97,6 +97,7 @@ class TagsViewSet(viewsets.ModelViewSet):
     """Просмотр и редактирование списка тегов."""
 
     queryset = Tag.objects.all()
+    pagination_class = None
     serializer_class = TagSerializer
     permission_classes = (IsAdminOrReadOnly,)
 
@@ -105,6 +106,7 @@ class IngredientsViewSet(viewsets.ModelViewSet):
     """Просмотр и редактирование списка ингредиентов."""
 
     queryset = Ingredient.objects.all()
+    pagination_class = None
     serializer_class = IngredientSerializer
     filterset_class = IngredientFilter
     permission_classes = (IsAdminOrReadOnly,)
