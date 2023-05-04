@@ -1,4 +1,4 @@
-# Для Ревью(сервер выкл): ip сервера < 130.193.40.223 >, login: < b@mail.ru >, password: < bzm >
+# Для Ревью(сервер вкл): ip сервера < 130.193.40.223 >, superuser - login: < b@mail.ru >, password: < bzm >
 
 # Продуктовый помощник Foodgram
 
@@ -50,14 +50,22 @@ sudo docker-compose up -d --build
 Для доступа к контейнеру выполняем следующие команды:
 ~~~
 sudo docker-compose exec backend python manage.py makemigrations
+~~~
+~~~
 sudo docker-compose exec backend python manage.py migrate --noinput
+~~~
+~~~
 sudo docker-compose exec backend python manage.py createsuperuser
+~~~
+~~~
 sudo docker-compose exec backend python manage.py collectstatic --no-input
 ~~~
 
 Дополнительно можно наполнить DB ингредиентами и тэгами:
 ~~~
 sudo docker-compose exec backend python manage.py load_tags
+~~~
+~~~
 sudo docker-compose exec backend python manage.py load_ingrs_json
 ~~~
 
@@ -70,9 +78,6 @@ sudo docker-compose stop
 ~~~
 sudo docker-compose down -v
 ~~~
-
-Документация к API доступна после запуска
-http://127.0.0.1/api/docs/
 
 ## Использование CI/CD
 
@@ -100,9 +105,13 @@ DB_PORT
 SECRET_KEY
 ALLOWED_HOSTS
 CSRF_TRUSTED_ORIGINS
+
+# Telegram
+TELEGRAM_TO - ваш telegram_id
+TELEGRAM_TOKEN - токен бота
 ~~~
 
-## На сервере (дорабатывается):
+## На сервере:
 
 ### Подготовьте сервер
 
@@ -139,29 +148,40 @@ cd ~
 mkdir infra
 ~~~
 
+~~~
+cd infra
+~~~
 Скопируйте файлы docker-compose.yaml и nginx/default.conf из вашего проекта на сервер в home/<ваш_username>/infra/docker-compose.yaml
 и
 home/<ваш_username>/infra/nginx/default.conf соответственно.
 
 Выполняем миграции:
 ~~~
-
+sudo docker-compose exec backend python manage.py makemigrations
 ~~~
-
-Создаем суперпользователя:
 ~~~
-
+sudo docker-compose exec backend python manage.py migrate --noinput
 ~~~
 
 Србираем статику:
 ~~~
-
+sudo docker-compose exec backend python manage.py collectstatic --no-input
 ~~~
 
-Создаем дамп базы данных (резервную копию):
+Создаем суперюзера:
 ~~~
-docker-compose exec web python manage.py dumpdata > dumpPostrgeSQL.json
+sudo docker-compose exec backend python manage.py createsuperuser
 ~~~
+
+Наполняем DB ингредиентами и тэгами:
+~~~
+sudo docker-compose exec backend python manage.py load_tags
+~~~
+~~~
+sudo docker-compose exec backend python manage.py load_ingrs_json
+~~~
+
+Настройка завершена
 
 ---
 Документация доступна по эндпойнту: http:// < ip сервера > /redoc/
