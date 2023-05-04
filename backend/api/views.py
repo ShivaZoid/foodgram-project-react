@@ -7,9 +7,11 @@ from django.db.models.expressions import Exists, OuterRef, Value
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from djoser.views import UserViewSet
+from reportlab.lib.pagesizes import A4, portrait
+from reportlab.lib.units import cm
+from reportlab.pdfgen import canvas
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.pdfgen import canvas
 from rest_framework import generics, status, viewsets
 from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.views import ObtainAuthToken
@@ -159,29 +161,30 @@ class RecipesViewSet(viewsets.ModelViewSet):
         """
 
         buffer = io.BytesIO()
-        page = canvas.Canvas(buffer)
-        pdfmetrics.registerFont(TTFont('Vera', 'Vera.ttf'))
-        x_position, y_position = 50, 800
+        page = canvas.Canvas(buffer, pagesize=portrait(A4))
+        pdfmetrics.registerFont(TTFont('TimesNewRoman', 'times.ttf'))
+        x_position, y_position = 1 * cm, 28 * cm
         shopping_cart = (
             request.user.shopping_cart.recipe.
             values(
                 'ingredients__name',
                 'ingredients__measurement_unit'
             ).annotate(amount=Sum('recipe__amount')).order_by())
-        page.setFont('Vera', 14)
+        page.setFont('TimesNewRoman', 14)
         if shopping_cart:
-            indent = 20
+            indent = 0.7 * cm
             page.drawString(x_position, y_position, 'Cписок покупок:')
+            y_position -= indent
             for index, recipe in enumerate(shopping_cart, start=1):
                 page.drawString(
-                    x_position, y_position - indent,
+                    x_position, y_position,
                     f'{index}. {recipe["ingredients__name"]} - '
                     f'{recipe["amount"]} '
                     f'{recipe["ingredients__measurement_unit"]}.')
-                y_position -= 15
-                if y_position <= 50:
+                y_position -= indent
+                if y_position <= 2 * cm:
                     page.showPage()
-                    y_position = 800
+                    y_position = 28 * cm
             page.save()
             buffer.seek(0)
             return FileResponse(
@@ -189,7 +192,7 @@ class RecipesViewSet(viewsets.ModelViewSet):
                 as_attachment=True,
                 filename='shoppingcart.pdf'
             )
-        page.setFont('Vera', 24)
+        page.setFont('TimesNewRoman', 24)
         page.drawString(
             x_position,
             y_position,
