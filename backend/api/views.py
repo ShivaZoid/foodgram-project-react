@@ -21,7 +21,6 @@ from rest_framework.response import Response
 
 from api.filters import IngredientFilter, RecipeFilter
 from api.permissions import IsAdminOrReadOnly
-from api.pagination import LimitPageNumberPagination
 from recipes.models import (FavoriteRecipe, Ingredient, Recipe, ShoppingCart,
                             Subscribe, Tag)
 from .serializers import (IngredientSerializer, RecipeReadSerializer,
@@ -52,7 +51,6 @@ class GetObjectMixin:
 class UsersViewSet(UserViewSet):
     """Управление пользователями."""
 
-    pagination_class = LimitPageNumberPagination
     serializer_class = UserListSerializer
     permission_classes = (IsAuthenticated,)
 
@@ -114,7 +112,6 @@ class RecipesViewSet(viewsets.ModelViewSet):
     """Работа с рецептами."""
 
     queryset = Recipe.objects.all()
-    pagination_class = LimitPageNumberPagination
     filterset_class = RecipeFilter
     permission_classes = (IsAuthenticatedOrReadOnly,)
 
@@ -162,7 +159,7 @@ class RecipesViewSet(viewsets.ModelViewSet):
 
         buffer = io.BytesIO()
         page = canvas.Canvas(buffer)
-        pdfmetrics.registerFont(TTFont('TimesNewRoman', 'times.ttf'))
+        pdfmetrics.registerFont(TTFont('Vera', 'Vera.ttf'))
         x_position, y_position = 50, 800
         shopping_cart = (
             request.user.shopping_cart.recipe.
@@ -171,7 +168,7 @@ class RecipesViewSet(viewsets.ModelViewSet):
                 'ingredients__measurement_unit'
             ).annotate(amount=Sum('recipe__amount')).order_by()
         )
-        page.setFont('TimesNewRoman', 14)
+        page.setFont('Vera', 14)
         if shopping_cart:
             indent = 20
             page.drawString(x_position, y_position, 'Cписок покупок:')
@@ -193,7 +190,7 @@ class RecipesViewSet(viewsets.ModelViewSet):
                 as_attachment=True,
                 filename='shoppingcart.pdf'
             )
-        page.setFont('TimesNewRoman', 24)
+        page.setFont('Vera', 24)
         page.drawString(
             x_position,
             y_position,
