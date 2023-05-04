@@ -105,6 +105,7 @@ class IngredientsViewSet(viewsets.ModelViewSet):
     """Просмотр и редактирование списка ингредиентов."""
 
     queryset = Ingredient.objects.all()
+    pagination_class = LimitPageNumberPagination
     serializer_class = IngredientSerializer
     filterset_class = IngredientFilter
     permission_classes = (IsAdminOrReadOnly,)
