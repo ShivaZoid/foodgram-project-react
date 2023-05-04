@@ -169,7 +169,8 @@ class RecipesViewSet(viewsets.ModelViewSet):
             values(
                 'ingredients__name',
                 'ingredients__measurement_unit'
-            ).annotate(amount=Sum('recipe__amount')).order_by())
+            ).annotate(amount=Sum('recipe__amount')).order_by()
+        )
         page.setFont('TimesNewRoman', 14)
         if shopping_cart:
             indent = 20
@@ -179,7 +180,8 @@ class RecipesViewSet(viewsets.ModelViewSet):
                     x_position, y_position - indent,
                     f'{index}. {recipe["ingredients__name"]} - '
                     f'{recipe["amount"]} '
-                    f'{recipe["ingredients__measurement_unit"]}.')
+                    f'{recipe["ingredients__measurement_unit"]}.'
+                )
                 y_position -= 15
                 if y_position <= 50:
                     page.showPage()
@@ -195,7 +197,8 @@ class RecipesViewSet(viewsets.ModelViewSet):
         page.drawString(
             x_position,
             y_position,
-            'Cписок покупок пуст!')
+            'Cписок покупок пуст!'
+        )
         page.save()
         buffer.seek(0)
         return FileResponse(
