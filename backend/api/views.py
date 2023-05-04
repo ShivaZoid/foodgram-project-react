@@ -7,8 +7,6 @@ from django.db.models.expressions import Exists, OuterRef, Value
 from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from djoser.views import UserViewSet
-from reportlab.lib.pagesizes import A4, portrait
-from reportlab.lib.units import cm
 from reportlab.pdfgen import canvas
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
@@ -163,9 +161,9 @@ class RecipesViewSet(viewsets.ModelViewSet):
         """
 
         buffer = io.BytesIO()
-        page = canvas.Canvas(buffer, pagesize=portrait(A4))
+        page = canvas.Canvas(buffer)
         pdfmetrics.registerFont(TTFont('TimesNewRoman', 'times.ttf'))
-        x_position, y_position = 1 * cm, 28 * cm
+        x_position, y_position = 50, 800
         shopping_cart = (
             request.user.shopping_cart.recipe.
             values(
@@ -174,19 +172,18 @@ class RecipesViewSet(viewsets.ModelViewSet):
             ).annotate(amount=Sum('recipe__amount')).order_by())
         page.setFont('TimesNewRoman', 14)
         if shopping_cart:
-            indent = 0.7 * cm
+            indent = 20
             page.drawString(x_position, y_position, 'Cписок покупок:')
-            y_position -= indent
             for index, recipe in enumerate(shopping_cart, start=1):
                 page.drawString(
-                    x_position, y_position,
+                    x_position, y_position - indent,
                     f'{index}. {recipe["ingredients__name"]} - '
                     f'{recipe["amount"]} '
                     f'{recipe["ingredients__measurement_unit"]}.')
-                y_position -= indent
-                if y_position <= 2 * cm:
+                y_position -= 15
+                if y_position <= 50:
                     page.showPage()
-                    y_position = 28 * cm
+                    y_position = 800
             page.save()
             buffer.seek(0)
             return FileResponse(
