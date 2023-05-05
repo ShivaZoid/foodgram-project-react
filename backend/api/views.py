@@ -40,12 +40,14 @@ class GetObjectMixin:
 
     serializer_class = SubscribeRecipeSerializer
     permission_classes = (AllowAny,)
+    model_class = None
+    param_name = None
 
     def get_object(self):
-        recipe_id = self.kwargs['recipe_id']
-        recipe = get_object_or_404(Recipe, id=recipe_id)
-        self.check_object_permissions(self.request, recipe)
-        return recipe
+        obj_id = self.kwargs[self.param_name]
+        model = get_object_or_404(self.model_class, id=obj_id)
+        self.check_object_permissions(self.request, model)
+        return model
 
 
 class UsersViewSet(UserViewSet):
@@ -262,6 +264,9 @@ class AddDeleteFavoriteRecipe(GetObjectMixin,
     Позволяет добавить или удалить рецепты в избранном у пользователя.
     """
 
+    model_class = Recipe
+    param_name = 'recipe_id'
+
     def create(self, request, *args, **kwargs):
         instance = self.get_object()
         request.user.favorite_recipe.recipe.add(instance)
@@ -278,6 +283,9 @@ class AddDeleteShoppingCart(GetObjectMixin,
     """
     Позволяет добавить или удалить рецепт в списоке покупок пользователя.
     """
+
+    model_class = Recipe
+    param_name = 'recipe_id'
 
     def create(self, request, *args, **kwargs):
         instance = self.get_object()

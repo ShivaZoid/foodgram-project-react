@@ -240,11 +240,15 @@ class RecipeWriteSerializer(serializers.ModelSerializer):
 
     def create_ingredients(self, ingredients, recipe):
         """Создает связанные объекты модели."""
-        for ingredient in ingredients:
-            RecipeIngredient.objects.create(
+        recipe_ingredients = [
+            RecipeIngredient(
                 recipe=recipe,
                 ingredient_id=ingredient.get('id'),
-                amount=ingredient.get('amount'), )
+                amount=ingredient.get('amount')
+            )
+            for ingredient in ingredients
+        ]
+        RecipeIngredient.objects.bulk_create(recipe_ingredients)
 
     def create(self, validated_data):
         """Создание новых объектов модели Recipe."""
@@ -287,16 +291,11 @@ class SubscribeRecipeSerializer(serializers.ModelSerializer):
 class SubscribeSerializer(serializers.ModelSerializer):
     """Сериализатор для подписок."""
 
-    id = serializers.IntegerField(
-        source='author.id')
-    email = serializers.EmailField(
-        source='author.email')
-    username = serializers.CharField(
-        source='author.username')
-    first_name = serializers.CharField(
-        source='author.first_name')
-    last_name = serializers.CharField(
-        source='author.last_name')
+    id = UserListSerializer(source='author.id')
+    email = UserListSerializer(source='author.email')
+    username = UserListSerializer(source='author.username')
+    first_name = UserListSerializer(source='author.first_name')
+    last_name = UserListSerializer(source='author.last_name')
     recipes = serializers.SerializerMethodField()
     is_subscribed = serializers.BooleanField(
         read_only=True)

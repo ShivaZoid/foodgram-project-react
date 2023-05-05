@@ -4,8 +4,6 @@ from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
-from .validators import tag_slug_validator
-
 
 User = get_user_model()
 
@@ -33,8 +31,7 @@ class Tag(models.Model):
     slug = models.SlugField(
         'Уникальный слаг',
         max_length=100,
-        unique=True,
-        validators=(tag_slug_validator,),
+        unique=True
     )
 
     class Meta:
@@ -105,9 +102,6 @@ class Recipe(models.Model):
     )
     text = models.TextField(
         'Описание рецепта'
-    )
-    cooking_time = models.BigIntegerField(
-        'Время приготовления рецепта'
     )
     ingredients = models.ManyToManyField(
         Ingredient,
@@ -232,15 +226,15 @@ class FavoriteRecipe(models.Model):
         recipe: избранный рецепт.
     """
 
-    user = models.OneToOneField(
+    user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        null=True,
         related_name='favorite_recipe',
         verbose_name='Пользователь'
     )
-    recipe = models.ManyToManyField(
+    recipe = models.ForeignKey(
         Recipe,
+        on_delete=models.CASCADE,
         related_name='favorite_recipe',
         verbose_name='Избранный рецепт'
     )
@@ -253,15 +247,6 @@ class FavoriteRecipe(models.Model):
         recipe_list = [item['name'] for item in self.recipe.values('name')]
         return f'Пользователь {self.user} добавил {recipe_list} в избранные.'
 
-    @receiver(post_save, sender=User)
-    def create_favorite_recipe(sender, instance, created, **kwargs):
-        """
-        Функция, которая создаёт экземпляр модели FavoriteRecipe
-        для пользователя, когда создаётся экземпляр модели User.
-        """
-        if created:
-            return FavoriteRecipe.objects.create(user=instance)
-
 
 class ShoppingCart(models.Model):
     """
@@ -272,15 +257,16 @@ class ShoppingCart(models.Model):
         recipe: рецепты, которые пользователь добавил в свою корзину покупок.
     """
 
-    user = models.OneToOneField(
+    user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
         related_name='shopping_cart',
         null=True,
         verbose_name='Пользователь'
     )
-    recipe = models.ManyToManyField(
+    recipe = models.ForeignKey(
         Recipe,
+        on_delete=models.CASCADE,
         related_name='shopping_cart',
         verbose_name='Покупка'
     )
@@ -293,12 +279,3 @@ class ShoppingCart(models.Model):
     def __str__(self):
         recipe_list = [item['name'] for item in self.recipe.values('name')]
         return f'Пользователь {self.user} добавил {recipe_list} в покупки.'
-
-    @receiver(post_save, sender=User)
-    def create_shopping_cart(sender, instance, created, **kwargs):
-        """
-        Функция, которая создаёт экземпляр модели ShoppingCart
-        для пользователя, когда создаётся экземпляр модели User.
-        """
-        if created:
-            return ShoppingCart.objects.create(user=instance)
