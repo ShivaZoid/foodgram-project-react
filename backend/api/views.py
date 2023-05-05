@@ -40,12 +40,14 @@ class GetObjectMixin:
 
     serializer_class = SubscribeRecipeSerializer
     permission_classes = (AllowAny,)
+    model_class = None
+    param_name = None
 
     def get_object(self):
-        recipe_id = self.kwargs['recipe_id']
-        recipe = get_object_or_404(Recipe, id=recipe_id)
-        self.check_object_permissions(self.request, recipe)
-        return recipe
+        obj_id = self.kwargs[self.param_name]
+        model = get_object_or_404(self.model_class, id=obj_id)
+        self.check_object_permissions(self.request, model)
+        return model
 
 
 class UsersViewSet(UserViewSet):
@@ -262,14 +264,20 @@ class AddDeleteFavoriteRecipe(GetObjectMixin,
     Позволяет добавить или удалить рецепты в избранном у пользователя.
     """
 
+    model_class = Recipe
+    param_name = 'recipe_id'
+
     def create(self, request, *args, **kwargs):
         instance = self.get_object()
-        request.user.favorite_recipe.recipe.add(instance)
+        FavoriteRecipe.objects.create(user=request.user, recipe=instance)
         serializer = self.get_serializer(instance)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def perform_destroy(self, instance):
-        self.request.user.favorite_recipe.recipe.remove(instance)
+        FavoriteRecipe.objects.filter(
+            user=self.request.user,
+            recipe=instance
+        ).delete()
 
 
 class AddDeleteShoppingCart(GetObjectMixin,
@@ -279,14 +287,20 @@ class AddDeleteShoppingCart(GetObjectMixin,
     Позволяет добавить или удалить рецепт в списоке покупок пользователя.
     """
 
+    model_class = Recipe
+    param_name = 'recipe_id'
+
     def create(self, request, *args, **kwargs):
         instance = self.get_object()
-        request.user.shopping_cart.recipe.add(instance)
+        ShoppingCart.objects.create(user=request.user, recipe=instance)
         serializer = self.get_serializer(instance)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def perform_destroy(self, instance):
-        self.request.user.shopping_cart.recipe.remove(instance)
+        ShoppingCart.objects.filter(
+            user=self.request.user,
+            recipe=instance
+        ).delete()
 
 
 class AuthToken(ObtainAuthToken):
