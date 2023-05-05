@@ -247,12 +247,6 @@ class FavoriteRecipe(models.Model):
         recipe_list = [item['name'] for item in self.recipe.values('name')]
         return f'Пользователь {self.user} добавил {recipe_list} в избранные.'
 
-    @receiver(post_save, sender=User)
-    def create_favorite_recipe(
-            sender, instance, created, **kwargs):
-        if created:
-            return FavoriteRecipe.objects.create(user=instance)
-
 
 class ShoppingCart(models.Model):
     """
@@ -285,9 +279,3 @@ class ShoppingCart(models.Model):
     def __str__(self):
         recipe_list = [item['name'] for item in self.recipe.values('name')]
         return f'Пользователь {self.user} добавил {recipe_list} в покупки.'
-
-    @receiver(post_save, sender=User)
-    def create_shopping_cart(
-            sender, instance, created, **kwargs):
-        if created:
-            return ShoppingCart.objects.create(user=instance)
