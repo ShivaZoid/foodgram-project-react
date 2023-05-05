@@ -269,12 +269,12 @@ class AddDeleteFavoriteRecipe(GetObjectMixin,
 
     def create(self, request, *args, **kwargs):
         instance = self.get_object()
-        request.user.favorite_recipe.recipe.add(instance)
+        request.user.favorite_recipe.model.add(instance)
         serializer = self.get_serializer(instance)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def perform_destroy(self, instance):
-        self.request.user.favorite_recipe.recipe.remove(instance)
+        self.request.user.favorite_recipe.model.remove(instance)
 
 
 class AddDeleteShoppingCart(GetObjectMixin,
@@ -289,12 +289,12 @@ class AddDeleteShoppingCart(GetObjectMixin,
 
     def create(self, request, *args, **kwargs):
         instance = self.get_object()
-        request.user.shopping_cart.recipe.add(instance)
+        request.user.shopping_cart.model.add(instance)
         serializer = self.get_serializer(instance)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     def perform_destroy(self, instance):
-        self.request.user.shopping_cart.recipe.remove(instance)
+        self.request.user.shopping_cart.model.remove(instance)
 
 
 class AuthToken(ObtainAuthToken):
