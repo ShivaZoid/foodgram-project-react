@@ -127,12 +127,15 @@ class FavoriteRecipeAdmin(admin.ModelAdmin):
 
     @admin.display(description='Рецепты')
     def get_recipe(self, obj):
-        return [
-            f'{item["name"]} ' for item in obj.recipe.values('name')[:5]]
+        recipes = obj.recipe.all()[:5] if obj.recipe.exists() else []
+        return [f'{recipe.name} ' for recipe in recipes]
 
     @admin.display(description='В избранных')
     def get_count(self, obj):
-        return obj.recipe.count()
+        if obj.user is None:
+            return 0
+        else:
+            return obj.user.favorite_recipe.count()
 
 
 @admin.register(ShoppingCart)
@@ -153,9 +156,12 @@ class ShoppingCartAdmin(admin.ModelAdmin):
 
     @admin.display(description='Рецепты')
     def get_recipe(self, obj):
-        return [
-            f'{item["name"]} ' for item in obj.recipe.values('name')[:5]]
+        recipes = obj.recipe.all()[:5] if obj.recipe.exists() else []
+        return [f'{recipe.name} ' for recipe in recipes]
 
-    @admin.display(description='В избранных')
+    @admin.display(description='В корзине покупок')
     def get_count(self, obj):
-        return obj.recipe.count()
+        if obj.user is None:
+            return 0
+        else:
+            return obj.user.shopping_cart.count()
