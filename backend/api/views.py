@@ -171,7 +171,7 @@ class RecipesViewSet(viewsets.ModelViewSet):
                 'ingredients__name',
                 'ingredients__measurement_unit'
             )
-            .annotate(amount=Sum('shopping_cart__recipe__amount')).order_by()
+            .annotate(amount=Sum('recipe__amount')).order_by()
         )
         page.setFont('Vera', 14)
         if shopping_cart:
