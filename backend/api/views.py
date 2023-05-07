@@ -180,9 +180,9 @@ class RecipesViewSet(viewsets.ModelViewSet):
             for index, recipe in enumerate(shopping_cart, start=1):
                 page.drawString(
                     x_position, y_position - indent,
-                    f'{index}. {recipe["ingredients__name"]} - '
+                    f'{index}. {recipe["recipe__ingredients__name"]} - '
                     f'{recipe["amount"]} '
-                    f'{recipe["ingredients__measurement_unit"]}.'
+                    f'{recipe["recipe__ingredients__measurement_unit"]}.'
                 )
                 y_position -= 15
                 if y_position <= 50:
