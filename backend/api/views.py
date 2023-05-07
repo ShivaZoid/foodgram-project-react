@@ -164,11 +164,14 @@ class RecipesViewSet(viewsets.ModelViewSet):
         pdfmetrics.registerFont(TTFont('Vera', 'Vera.ttf'))
         x_position, y_position = 50, 800
         shopping_cart = (
-            request.user.shopping_cart.recipe.
-            values(
-                'ingredients__name',
-                'ingredients__measurement_unit'
-            ).annotate(amount=Sum('recipe__amount')).order_by()
+            ShoppingCart
+            .objects
+            .filter(user=request.user)
+            .values(
+                'recipe__ingredients__name',
+                'recipe__ingredients__measurement_unit'
+            )
+            .annotate(amount=Sum('recipe__amount')).order_by()
         )
         page.setFont('Vera', 14)
         if shopping_cart:
