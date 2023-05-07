@@ -242,8 +242,7 @@ class FavoriteRecipe(models.Model):
         verbose_name_plural = 'Избранные рецепты'
 
     def __str__(self):
-        recipe_list = [item['name'] for item in self.recipe.values('name')]
-        return f'Пользователь {self.user} добавил {recipe_list} в избранные.'
+        return f'{self.user} добавил рецепт "{self.recipe}" в избранное.'
 
 
 class ShoppingCart(models.Model):
@@ -275,5 +274,4 @@ class ShoppingCart(models.Model):
         ordering = ['-id']
 
     def __str__(self):
-        recipe_list = [item['name'] for item in self.recipe.values('name')]
-        return f'Пользователь {self.user} добавил {recipe_list} в покупки.'
+        return f'"{self.recipe}" в корзине покупок {self.user}.'
