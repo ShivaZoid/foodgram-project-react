@@ -23,8 +23,8 @@ class Api {
           a.href = url;
           a.download = "shopping-list";
           document.body.appendChild(a); // we need to append the element to the dom -> otherwise it will not work in firefox
-          a.click();    
-          a.remove();  //afterwards we remove the element again 
+          a.click();
+          a.remove();  //afterwards we remove the element again
         })
       }
       reject()
@@ -265,7 +265,7 @@ class Api {
   // subscriptions
 
   getSubscriptions ({
-    page, 
+    page,
     limit = 6,
     recipes_limit = 3
   }) {
@@ -386,17 +386,30 @@ class Api {
   }
 
   downloadFile () {
-    const token = localStorage.getItem('token')
-    return fetch(
-      `/api/recipes/download_shopping_cart/`,
-      {
-        method: 'GET',
-        headers: {
-          ...this._headers,
-          'authorization': `Token ${token}`
+    const token = localStorage.getItem('token');
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', `/api/recipes/download_shopping_cart/`);
+    xhr.setRequestHeader('Authorization', `Token ${token}`);
+    xhr.responseType = 'blob';
+    xhr.onload = function() {
+        if (xhr.status === 200) {
+            const blob = new Blob([xhr.response], { type: 'application/pdf' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = 'shoppingcart.pdf';
+            document.body.appendChild(a);
+            a.click();
+            URL.revokeObjectURL(url);
+        } else {
+            console.error(xhr.statusText);
         }
-      }
-    ).then(this.checkFileDownloadResponse)
+    };
+    xhr.onerror = function() {
+        console.error(xhr.statusText);
+    };
+    xhr.send();
   }
 }
 
