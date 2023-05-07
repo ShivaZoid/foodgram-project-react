@@ -164,14 +164,14 @@ class RecipesViewSet(viewsets.ModelViewSet):
         pdfmetrics.registerFont(TTFont('Vera', 'Vera.ttf'))
         x_position, y_position = 50, 800
         shopping_cart = (
-            ShoppingCart
+            Recipe
             .objects
-            .filter(user=request.user)
+            .filter(shopping_cart__user=request.user)
             .values(
-                'recipe__ingredients__name',
-                'recipe__ingredients__measurement_unit'
+                'ingredients__name',
+                'ingredients__measurement_unit'
             )
-            .annotate(amount=Sum('recipe__amount')).order_by()
+            .annotate(amount=Sum('shopping_cart__recipe__amount')).order_by()
         )
         page.setFont('Vera', 14)
         if shopping_cart:
@@ -180,9 +180,9 @@ class RecipesViewSet(viewsets.ModelViewSet):
             for index, recipe in enumerate(shopping_cart, start=1):
                 page.drawString(
                     x_position, y_position - indent,
-                    f'{index}. {recipe["recipe__ingredients__name"]} - '
+                    f'{index}. {recipe["ingredients__name"]} - '
                     f'{recipe["amount"]} '
-                    f'{recipe["recipe__ingredients__measurement_unit"]}.'
+                    f'{recipe["ingredients__measurement_unit"]}.'
                 )
                 y_position -= 15
                 if y_position <= 50:
