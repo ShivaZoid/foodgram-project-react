@@ -386,30 +386,17 @@ class Api {
   }
 
   downloadFile () {
-    const token = localStorage.getItem('token');
-    const xhr = new XMLHttpRequest();
-    xhr.open('GET', `/api/recipes/download_shopping_cart/`);
-    xhr.setRequestHeader('Authorization', `Token ${token}`);
-    xhr.responseType = 'blob';
-    xhr.onload = function() {
-        if (xhr.status === 200) {
-            const blob = new Blob([xhr.response], { type: 'application/pdf' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.style.display = 'none';
-            a.href = url;
-            a.download = 'shoppingcart.pdf';
-            document.body.appendChild(a);
-            a.click();
-            URL.revokeObjectURL(url);
-        } else {
-            console.error(xhr.statusText);
+    const token = localStorage.getItem('token')
+    return fetch(
+      `/api/recipes/download_shopping_cart/`,
+      {
+        method: 'GET',
+        headers: {
+          ...this._headers,
+          'authorization': `Token ${token}`
         }
-    };
-    xhr.onerror = function() {
-        console.error(xhr.statusText);
-    };
-    xhr.send();
+      }
+    ).then(this.checkFileDownloadResponse)
   }
 }
 
