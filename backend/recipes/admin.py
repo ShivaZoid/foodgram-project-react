@@ -127,8 +127,10 @@ class FavoriteRecipeAdmin(admin.ModelAdmin):
 
     @admin.display(description='Рецепты')
     def get_recipe(self, obj):
-        recipes = obj.recipe.all()[:5] if obj.recipe.exists() else []
-        return [f'{recipe.name} ' for recipe in recipes]
+        if hasattr(obj.recipe, 'exists') and callable(obj.recipe.exists):
+            recipes = obj.recipe.all()[:5] if obj.recipe.exists() else []
+            return [f'{recipe.name} ' for recipe in recipes]
+        return self.empty_value_display
 
     @admin.display(description='В избранных')
     def get_count(self, obj):
@@ -156,8 +158,10 @@ class ShoppingCartAdmin(admin.ModelAdmin):
 
     @admin.display(description='Рецепты')
     def get_recipe(self, obj):
-        recipes = obj.recipe.all()[:5] if obj.recipe.exists() else []
-        return [f'{recipe.name} ' for recipe in recipes]
+        if hasattr(obj.recipe, 'exists') and callable(obj.recipe.exists):
+            recipes = obj.recipe.all()[:5] if obj.recipe.exists() else []
+            return [f'{recipe.name} ' for recipe in recipes]
+        return self.empty_value_display
 
     @admin.display(description='В корзине покупок')
     def get_count(self, obj):
